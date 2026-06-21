@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HGT Country API - Developer Portal</title>
+    <style>
+        /* ================= CSS STYLING ================= */
+        :root {
+            --primary: #00d2ff;
+            --secondary: #3a7bd5;
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --text-light: #e0e0e0;
+            --text-muted: #a0a0a0;
+        }
+
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark); color: var(--text-light);
+            padding-bottom: 70px; /* Space for bottom nav */
+        }
+
+        /* Full Screen Overlays */
+        .screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 1000;
+            text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Welcome Screen */
+        .brand-title { font-size: 28px; color: var(--primary); margin-bottom: 10px; }
+        .brand-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 30px; }
+        .start-btn {
+            background: linear-gradient(to right, var(--secondary), var(--primary));
+            color: white; border: none; padding: 15px 30px; font-size: 18px;
+            border-radius: 30px; cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .start-btn:hover { transform: scale(1.05); }
+
+        /* Loading Screen */
+        .progress-circle {
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 8px solid #333; border-top-color: var(--primary);
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loading-text { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .loading-percent { font-size: 24px; color: var(--primary); }
+
+        /* Main App Container */
+        #app-container { display: none; }
+        .tab-content { display: none; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #1a1a1a; display: flex; justify-content: space-around;
+            border-top: 1px solid #333; z-index: 900;
+        }
+        .bottom-nav button {
+            background: none; border: none; color: var(--text-muted);
+            padding: 15px; flex-grow: 1; font-size: 16px; cursor: pointer;
+            transition: 0.3s; font-weight: bold;
+        }
+        .bottom-nav button.active-nav { color: var(--primary); border-top: 3px solid var(--primary); }
+
+        /* Documentation & Search */
+        .search-bar {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444;
+            background: #2a2a2a; color: white; font-size: 16px; margin-bottom: 20px; box-sizing: border-box;
+        }
+        .doc-section { background: var(--bg-panel); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        pre { background: #000; padding: 15px; border-radius: 5px; overflow-x: auto; color: #0f0; }
+
+        /* Review Section */
+        .review-box { background: var(--bg-panel); padding: 20px; border-radius: 10px; margin-bottom: 15px; }
+        .review-input { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #2a2a2a; border: 1px solid #444; color: white; box-sizing: border-box; }
+        .post-btn { background: var(--primary); color: #000; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .star-rating select { padding: 10px; background: #2a2a2a; color: white; border: 1px solid #444; }
+        #reviews-list { margin-top: 30px; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Welcome Screen -->
+    <div id="welcome-screen" class="screen">
+        <h1 class="brand-title">Welcome to HGT Country API</h1>
+        <p class="brand-subtitle">Powered by Henry Global Tech Industry</p>
+        <p style="max-width: 600px; line-height: 1.6; margin-bottom: 30px;">
+            This API was built under the brand of Henry Global Tech Industry to help developers integrate advanced, real-time country data into their applications effortlessly.
+        </p>
+        <button class="start-btn" onclick="startApp()">Get Started with Free API</button>
+        <p style="margin-top: 40px; font-size: 12px; color: #666;">© 2026 All Rights Reserved, Henry Global Tech Industry</p>
+    </div>
+
+    <!-- 2. Loading Screen (15 Seconds) -->
+    <div id="loading-screen" class="screen hidden">
+        <div class="progress-circle"></div>
+        <div class="loading-text" id="loading-msg">Analyzing environment...</div>
+        <div class="loading-percent" id="loading-pct">0%</div>
+    </div>
+
+    <!-- 3. Main Dashboard -->
+    <div id="app-container">
+        
+        <!-- DOCS TAB -->
+        <div id="tab-docs" class="tab-content active">
+            <h2>API Documentation</h2>
+            <input type="text" id="searchBar" class="search-bar" placeholder="Search language (e.g., Kotlin, Python, Web)..." onkeyup="searchDocs()">
+            
+            <div class="doc-section" data-lang="web javascript js html">
+                <h3>Web (JavaScript / Frontend)</h3>
+                <p>To integrate the HGT Country API into your web application, you will utilize the native JavaScript <code>fetch()</code> API. This method is highly efficient, built directly into all modern web browsers, and requires no external libraries. When making a request to our JSON endpoint, the server responds with a Promise. Because our infrastructure at Henry Global Tech Industry is configured with permissive Cross-Origin Resource Sharing (CORS), you will not encounter cross-domain blocking issues. You should implement an asynchronous function (async/await) to handle the network request seamlessly without freezing the user interface. Ensure you include a `try/catch` block to handle any potential network failures gracefully. Once the JSON is parsed, you can iterate over the array to map flags, names, and presidential data directly to your HTML DOM elements. By choosing HGT, you are leveraging enterprise-grade reliability completely free of charge.</p>
+<pre><code>// Web JavaScript Integration
+const API_URL = "https://henrykamsi.github.io/HGT-Country-API-free/countries.json";
+async function fetchCountries() {
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        console.log("HGT Data Loaded:", data);
+    } catch (error) {
+        console.error("HGT API Error:", error);
+    }
+}
+fetchCountries();</code></pre>
+            </div>
+
+            <div class="doc-section" data-lang="android kotlin java">
+                <h3>Android (Kotlin)</h3>
+                <p>For native Android app development, connecting to the HGT Country API requires network permissions. First, you must add <code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code> to your `AndroidManifest.xml`. We highly recommend using the OkHttp library or Retrofit for robust API consumption. Because Android strictly prohibits network operations on the main UI thread, you must run this request asynchronously using Kotlin Coroutines or background callbacks. Once the data stream is received from our high-speed endpoint, you can deserialize the JSON payload using Gson or Moshi directly into your Kotlin Data Classes. Henry Global Tech Industry engineered this JSON structure to be exceptionally flat and lightweight, minimizing battery drain and memory overhead on mobile devices. The CEO and the development team spent significant resources ensuring this API responds with minimal latency, providing your mobile users with a flawless, instantaneous data-loading experience.</p>
+<pre><code>// Android Kotlin (OkHttp) Integration
+val client = OkHttpClient()
+val request = Request.Builder()
+    .url("https://henrykamsi.github.io/HGT-Country-API-free/countries.json")
+    .build()
+client.newCall(request).enqueue(object : Callback {
+    override fun onResponse(call: Call, response: Response) {
+        val responseData = response.body?.string()
+        // Parse with Gson into your data model
+    }
+    override fun onFailure(call: Call, e: IOException) {
+        e.printStackTrace()
+    }
+})</code></pre>
+            </div>
+
+            <div class="doc-section" data-lang="ios swift apple">
+                <h3>iOS (Swift)</h3>
+                <p>Integrating the HGT Country API into iOS applications requires utilizing Apple's native <code>URLSession</code> architecture. Swift provides powerful data parsing capabilities via the <code>Codable</code> protocol. You will first define a Struct that exactly mirrors our JSON keys (name, code, flag, president) and conforms to Codable. Because our API is served over secure HTTPS (enforced by GitHub Pages), you immediately comply with Apple's App Transport Security (ATS) requirements without needing exceptions. When you initiate the data task, ensure that any UI updates—such as reloading a UITableView or updating SwiftUI state—are strictly dispatched back to the main thread using <code>DispatchQueue.main.async</code>. The team at Henry Global Tech Industry optimized this dataset to load rapidly, meaning your iOS app will experience virtually zero hanging. We provide this commercial-grade architecture free to support the developer community globally.</p>
+<pre><code>// iOS Swift Integration
+struct Country: Codable { let name, code, flag, president: String }
+let url = URL(string: "https://henrykamsi.github.io/HGT-Country-API-free/countries.json")!
+URLSession.shared.dataTask(with: url) { data, response, error in
+    guard let data = data else { return }
+    if let countries = try? JSONDecoder().decode([Country].self, from: data) {
+        DispatchQueue.main.async {
+            // Update your UI here
+        }
+    }
+}.resume()</code></pre>
+            </div>
+
+            <div class="doc-section" data-lang="node server express js">
+                <h3>Node.js (Server-Side)</h3>
+                <p>When building backend systems or proxy servers using Node.js, consuming the HGT Country API is straightforward and highly scalable. Using built-in modules like `https` or popular libraries like `axios` or `node-fetch`, your server can pull the master country list and cache it locally. We heavily advise caching the JSON response in your server's memory (RAM) or a Redis instance for at least 24 hours. Because country and presidential data does not change by the minute, caching reduces network calls and speeds up your own endpoint responses to near zero latency. Henry Global Tech Industry designed this API to handle high request volumes, but responsible server-side caching ensures optimal performance across the board. This API infrastructure, which cost the HGT team between $50 to $75 to architect and deploy, is entirely free for your commercial backends, representing our commitment to robust open-source tooling.</p>
+<pre><code>// Node.js (Axios) Integration
+const axios = require('axios');
+async function getHGTData() {
+    try {
+        const url = 'https://henrykamsi.github.io/HGT-Country-API-free/countries.json';
+        const response = await axios.get(url);
+        console.log(response.data);
+    } catch (error) {
+        console.error("Fetch failed", error);
+    }
+}
+getHGTData();</code></pre>
+            </div>
+
+             <div class="doc-section" data-lang="python django flask">
+                <h3>Python</h3>
+                <p>Python developers building data science models, Flask servers, or Django applications will find the HGT Country API remarkably easy to parse. The most efficient method is using the widely adopted <code>requests</code> library. By making a simple GET request to our endpoint, Python automatically translates the JSON payload into native dictionaries and lists using the `.json()` method. This allows for immediate data manipulation, filtering, and database seeding. If your project involves data visualization of global metrics, our inclusion of standardized country codes and Unicode flags makes mapping extremely intuitive. The CEO of HGT, Henry, explicitly requested that this data format remain highly accessible for data scientists and backend engineers. By utilizing this API, you bypass the need to scrape unreliable Wikipedia tables, relying instead on a structured, maintained JSON file generously provided by Henry Global Tech Industry.</p>
+<pre><code># Python Integration
+import requests
+def fetch_hgt_countries():
+    url = "https://henrykamsi.github.io/HGT-Country-API-free/countries.json"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Loaded {len(data)} countries successfully.")
+        return data
+
+countries = fetch_hgt_countries()</code></pre>
+            </div>
+            
+             <div class="doc-section" data-lang="ruby rails">
+                <h3>Ruby</h3>
+                <p>For Ruby on Rails developers or standalone Ruby scripts, the HGT Country API integrates perfectly using the native <code>net/http</code> and <code>json</code> standard libraries. By requiring these modules, you can establish an HTTP connection, fetch the raw string, and parse it directly into Ruby Hashes. This is incredibly useful for populating database seed files (`seeds.rb`) when initializing a new Rails application that requires a list of global nations. Our JSON structure provides exactly what you need without bloated metadata. The team at Henry Global Tech Industry meticulously verified the data schema to ensure it plays nicely with ActiveRecord models if you choose to persist the data locally. We are proud to offer this $75-value infrastructure entirely free, empowering the Ruby community to build faster and smarter without worrying about data integrity.</p>
+<pre><code># Ruby Integration
+require 'net/http'
+require 'json'
+
+url = URI('https://henrykamsi.github.io/HGT-Country-API-free/countries.json')
+response = Net::HTTP.get(url)
+hgt_data = JSON.parse(response)
+puts hgt_data.first['name']</code></pre>
+            </div>
+
+            <div class="doc-section" data-lang="go golang">
+                <h3>Go (Golang)</h3>
+                <p>Go developers requiring hyper-fast data consumption will appreciate the simplicity of the HGT Country API. Using Go's native <code>net/http</code> and <code>encoding/json</code> packages, you can map the incoming JSON directly to statically typed Go Structs. Ensure you define struct tags (e.g., `json:"name"`) to match our casing exactly. Don't forget to use `defer resp.Body.Close()` to prevent memory leaks in your application. Because Go excels at concurrent networking, you can fetch this data rapidly on server startup. Henry Global Tech Industry built this endpoint to be lightweight and fast, making it a perfect companion for high-performance microservices written in Go. Under the leadership of our CEO, Henry, this API is maintained to support the demanding architectural requirements of enterprise developers, offering premium connectivity without any licensing fees.</p>
+<pre><code>// Go Integration
+package main
+import ("encoding/json"; "net/http"; "fmt")
+
+type Country struct {
+    Name      string `json:"name"`
+    Code      string `json:"code"`
+    Flag      string `json:"flag"`
+    President string `json:"president"`
+}
+
+func main() {
+    resp, _ := http.Get("https://henrykamsi.github.io/HGT-Country-API-free/countries.json")
+    defer resp.Body.Close()
+    var countries []Country
+    json.NewDecoder(resp.Body).Decode(&countries)
+    fmt.Println(countries[0].Name)
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- API LINKS TAB -->
+        <div id="tab-api" class="tab-content">
+            <h2>API Access & Links</h2>
+            <div class="doc-section" style="text-align: center;">
+                <h3 style="color: #0f0;">🟢 API Status: ONLINE & OPERATIONAL</h3>
+                <p>The HGT servers are currently routing traffic normally.</p>
+            </div>
+            
+            <div class="doc-section">
+                <h3>1. The Data Endpoint (For your Code)</h3>
+                <p>Use this JSON link inside your application's <code>fetch()</code> or HTTP requests. This link returns the raw data.</p>
+                <input type="text" class="search-bar" value="https://henrykamsi.github.io/HGT-Country-API-free/countries.json" readonly>
+            </div>
+
+            <div class="doc-section">
+                <h3>2. The Documentation URL (For Humans)</h3>
+                <p>Share this link with other developers so they can read this dashboard.</p>
+                <input type="text" class="search-bar" value="https://henrykamsi.github.io/HGT-Country-API-free/" readonly>
+            </div>
+        </div>
+
+        <!-- HGT COMPANY TAB -->
+        <div id="tab-hgt" class="tab-content">
+            <h2>Henry Global Tech Industry</h2>
+            <div class="doc-section">
+                <h3>About the Project</h3>
+                <p>This application and API infrastructure was established by the dedicated team at <strong>Henry Global Tech Industry</strong> under the leadership of our CEO, Henry. Recognizing the need for accessible, reliable geographical data, our team invested between $50 to $75 to architect this robust system. We are proud to provide this to the global developer community completely free of charge. Your success is our mission.</p>
+            </div>
+
+            <div class="review-box">
+                <h3>Leave a Review for HGT</h3>
+                <p>How was your experience? Your feedback is saved locally to your device.</p>
+                <input type="text" id="rev-title" class="review-input" placeholder="Review Title (e.g., Amazing API!)">
+                
+                <div class="star-rating" style="margin-bottom: 15px;">
+                    <label>Rating: </label>
+                    <select id="rev-stars">
+                        <option value="⭐⭐⭐⭐⭐">5 Stars - ⭐⭐⭐⭐⭐</option>
+                        <option value="⭐⭐⭐⭐">4 Stars - ⭐⭐⭐⭐</option>
+                        <option value="⭐⭐⭐">3 Stars - ⭐⭐⭐</option>
+                        <option value="⭐⭐">2 Stars - ⭐⭐</option>
+                        <option value="⭐">1 Star - ⭐</option>
+                    </select>
+                </div>
+
+                <textarea id="rev-desc" class="review-input" rows="4" placeholder="Tell us what you loved..."></textarea>
+                <button class="post-btn" onclick="submitReview()">Post Review</button>
+            </div>
+
+            <div id="reviews-list">
+                <h3>Community Feedback</h3>
+                <div id="review-container"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottom-nav" style="display: none;">
+        <button id="btn-docs" class="active-nav" onclick="switchTab('docs')">Documentation</button>
+        <button id="btn-api" onclick="switchTab('api')">API Links</button>
+        <button id="btn-hgt" onclick="switchTab('hgt')">HGT / Reviews</button>
+    </nav>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // --- 1. Loading Logic ---
+        function startApp() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            
+            let messages = [
+                "Initializing HGT secure connection...",
+                "Fetching API resources...",
+                "Getting the link from the dashboard...",
+                "Connecting to HTTP JSON server...",
+                "Finalizing configuration..."
+            ];
+            
+            let pct = 0;
+            let msgIndex = 0;
+            let pctInterval = setInterval(() => {
+                pct += 1;
+                document.getElementById('loading-pct').innerText = pct + "%";
+                
+                // Change message every ~3 seconds (at 20%, 40%, 60%, 80%)
+                if (pct % 20 === 0 && msgIndex < messages.length) {
+                    document.getElementById('loading-msg').innerText = messages[msgIndex];
+                    msgIndex++;
+                }
+
+                if (pct >= 100) {
+                    clearInterval(pctInterval);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('app-container').style.display = 'block';
+                    document.getElementById('bottom-nav').style.display = 'flex';
+                    loadReviews(); // Load cached reviews
+                }
+            }, 150); // 150ms * 100 = 15 seconds
+        }
+
+        // --- 2. Navigation Logic ---
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav button').forEach(btn => btn.classList.remove('active-nav'));
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active-nav');
+        }
+
+        // --- 3. Search Bar Logic ---
+        function searchDocs() {
+            let input = document.getElementById('searchBar').value.toLowerCase();
+            let sections = document.querySelectorAll('.doc-section[data-lang]');
+            
+            sections.forEach(section => {
+                let tags = section.getAttribute('data-lang');
+                if (tags.includes(input)) {
+                    section.style.display = "block";
+                } else {
+                    section.style.display = "none";
+                }
+            });
+        }
+
+        // --- 4. Review System & Profanity Filter Logic ---
+        // ADD YOUR FORBIDDEN WORDS HERE IN LOWERCASE
+        const forbiddenWords = ["badword1", "stupid", "idiot", "hate", "trash", "scam"];
+
+        function containsProfanity(text) {
+            let lowerText = text.toLowerCase();
+            return forbiddenWords.some(word => lowerText.includes(word));
+        }
+
+        function submitReview() {
+            let title = document.getElementById('rev-title').value.trim();
+            let stars = document.getElementById('rev-stars').value;
+            let desc = document.getElementById('rev-desc').value.trim();
+
+            if (!title || !desc) {
+                alert("Please fill out both the title and description.");
+                return;
+            }
+
+            // Apply Profanity Filter
+            if (containsProfanity(title) || containsProfanity(desc)) {
+                alert("ERROR: Your review contains inappropriate language and cannot be posted on the HGT platform.");
+                return;
+            }
+
+            // Save to LocalStorage
+            let reviewObj = { title: title, stars: stars, desc: desc, date: new Date().toLocaleDateString() };
+            let savedReviews = JSON.parse(localStorage.getItem('hgt_reviews') || "[]");
+            savedReviews.unshift(reviewObj); // Add to top
+            localStorage.setItem('hgt_reviews', JSON.stringify(savedReviews));
+
+            // Clear inputs and reload
+            document.getElementById('rev-title').value = "";
+            document.getElementById('rev-desc').value = "";
+            alert("Thank you! Your review has been securely saved locally.");
+            loadReviews();
+        }
+
+        function loadReviews() {
+            let container = document.getElementById('review-container');
+            container.innerHTML = "";
+            let savedReviews = JSON.parse(localStorage.getItem('hgt_reviews') || "[]");
+            
+            if (savedReviews.length === 0) {
+                container.innerHTML = "<p style='color: #888;'>No reviews yet. Be the first to leave one!</p>";
+                return;
+            }
+
+            savedReviews.forEach(rev => {
+                let div = document.createElement('div');
+                div.className = "doc-section";
+                div.innerHTML = `
+                    <h4 style="margin:0 0 5px 0; color: var(--primary);">${rev.title}</h4>
+                    <p style="margin:0 0 10px 0;">${rev.stars} <span style="font-size:12px; color:#888;">- ${rev.date}</span></p>
+                    <p style="margin:0;">${rev.desc}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
